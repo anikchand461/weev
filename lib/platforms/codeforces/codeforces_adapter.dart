@@ -11,31 +11,21 @@ class CodeforcesAdapter extends PlatformAdapter {
     final submissions =
         await CodeforcesApi.fetchSubmissions(username);
 
-    final Map<DateTime, int> dailyCount = {};
+    final Map<DateTime, int> daily = {};
 
-    for (final sub in submissions) {
-      if (sub['verdict'] != 'OK') continue;
+    for (final s in submissions) {
+      if (s['verdict'] != 'OK') continue;
 
-      final ts = sub['creationTimeSeconds'] * 1000;
+      final ts = s['creationTimeSeconds'] * 1000;
       final date =
           DateTime.fromMillisecondsSinceEpoch(ts);
       final day = DateTime(date.year, date.month, date.day);
 
-      dailyCount.update(
-        day,
-        (v) => v + 1,
-        ifAbsent: () => 1,
-      );
+      daily.update(day, (v) => v + 1, ifAbsent: () => 1);
     }
 
-    return dailyCount.entries
-        .map(
-          (e) => Activity(
-            e.key,
-            'codeforces',
-            e.value,
-          ),
-        )
+    return daily.entries
+        .map((e) => Activity(e.key, 'codeforces', e.value))
         .toList();
   }
 }
