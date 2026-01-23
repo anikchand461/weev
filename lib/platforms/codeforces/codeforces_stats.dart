@@ -12,6 +12,9 @@ class CodeforcesStatsService {
     final difficulty = <String, int>{};
     final activeDays = <String>{};
 
+    // Track difficulty per UNIQUE problem
+    final Map<String, int> problemDifficulty = {};
+
     for (final s in submissions) {
       final ts = s['creationTimeSeconds'] * 1000;
       final d = DateTime.fromMillisecondsSinceEpoch(ts);
@@ -20,12 +23,17 @@ class CodeforcesStatsService {
       if (s['verdict'] != 'OK') continue;
 
       final p = s['problem'];
-      solvedProblems.add('${p['contestId']}${p['index']}');
+      final problemId = '${p['contestId']}${p['index']}';
+
+      // Only count once per problem
+      if (solvedProblems.contains(problemId)) continue;
+
+      solvedProblems.add(problemId);
 
       if (p['rating'] != null) {
-        final key = p['rating'].toString();
+        final ratingKey = p['rating'].toString();
         difficulty.update(
-          key,
+          ratingKey,
           (v) => v + 1,
           ifAbsent: () => 1,
         );
@@ -41,7 +49,6 @@ class CodeforcesStatsService {
             .map<int>((c) => c['newRating'])
             .reduce((a, b) => a > b ? a : b);
 
-    // ✅ NEW unified PlatformStats return
     return PlatformStats(
       platform: 'codeforces',
       data: {

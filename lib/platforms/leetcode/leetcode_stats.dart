@@ -3,33 +3,33 @@ import 'leetcode_api.dart';
 
 class LeetCodeStatsService {
   static Future<PlatformStats> fetch(String username) async {
-    // Fetch solved counts by difficulty
-    final solved = await LeetCodeApi.fetchSolved(username);
+    final solvedByDifficulty =
+        await LeetCodeApi.fetchSolved(username);
 
-    final total = solved.values.fold<int>(
-      0,
-      (a, b) => a + b,
-    );
-
-    // Fetch submission calendar
     final calendar =
         await LeetCodeApi.fetchCalendar(username);
 
-    final activeDays = calendar.length;
+    final int solved =
+        solvedByDifficulty['All'] ?? 0;
+
+    final int easy =
+        solvedByDifficulty['Easy'] ?? 0;
+    final int medium =
+        solvedByDifficulty['Medium'] ?? 0;
+    final int hard =
+        solvedByDifficulty['Hard'] ?? 0;
+
+    final int activeDays = calendar.length;
 
     return PlatformStats(
       platform: 'leetcode',
       data: {
-        'Problems Solved': total,
-        'Submissions': calendar.values.fold<int>(
-          0,
-          (a, b) => a + b,
-        ),
+        'Problems Solved': solved,
         'Active Days': activeDays,
         'Difficulty': {
-          'Easy': solved['Easy'] ?? 0,
-          'Medium': solved['Medium'] ?? 0,
-          'Hard': solved['Hard'] ?? 0,
+          'Easy': easy,
+          'Medium': medium,
+          'Hard': hard,
         },
       },
     );
