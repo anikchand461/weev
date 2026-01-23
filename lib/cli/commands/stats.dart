@@ -1,46 +1,67 @@
 import '../../services/config_service.dart';
+import '../../models/platform_stats.dart';
 import '../../platforms/codeforces/codeforces_stats.dart';
 import '../../platforms/leetcode/leetcode_stats.dart';
+import '../../platforms/github/github_stats.dart';
+import '../../utils/github_heatmap_renderer.dart';
 
 class StatsCommand {
   static Future<void> run() async {
     final config = await ConfigService.load();
 
-    print('\n📊 Weev Full Stats\n');
+    print('📊 Weev Full Stats\n');
 
     if (config.platforms.containsKey('codeforces')) {
-      final handle = config.platforms['codeforces']!;
-      final s = await CodeforcesStatsService.fetch(handle);
-
-      _printStats(s);
+      final stats = await CodeforcesStatsService.fetch(
+        config.platforms['codeforces']!,
+      );
+      _print(stats, config.platforms['codeforces']!);
     }
 
     if (config.platforms.containsKey('leetcode')) {
-      final handle = config.platforms['leetcode']!;
-      final s = await LeetCodeStatsService.fetch(handle);
+      final stats = await LeetCodeStatsService.fetch(
+        config.platforms['leetcode']!,
+      );
+      _print(stats, config.platforms['leetcode']!);
+    }
 
-      _printStats(s);
+    if (config.platforms.containsKey('github') &&
+        config.tokens.containsKey('github')) {
+      final stats = await GitHubStatsService.fetch(
+        config.platforms['github']!,
+        config.tokens['github']!,
+      );
+      _print(stats, config.platforms['github']!);
     }
   }
 
-  static void _printStats(s) {
-    print('🔹 ${s.platform.toUpperCase()} (${s.username})');
-    print('  Problems Solved : ${s.solved}');
-    print('  Submissions     : ${s.submissions}');
-    print('  Active Days     : ${s.activeDays}');
+  static void _print(
+    PlatformStats stats,
+    String username,
+  ) {
+    print('🔷 ${stats.platform.toUpperCase()} ($username)');
 
-    if (s.contests != null) {
-      print('  Contests        : ${s.contests}');
-    }
-    if (s.rating != null) {
-      print('  Rating          : ${s.rating}');
-      print('  Max Rating      : ${s.maxRating}');
-    }
+    for (final entry in stats.data.entries) {
+      // 🔥 Special handling for GitHub heatmap
+      if (entry.key == 'Heatmap' &&
+          entry.value is Map<String, int>) {
+        print('Heatmap:');
+        GitHubHeatmapRenderer.render(
+          entry.value as Map<String, int>,
+        );
+        continue;
+      }
 
-    print('  Difficulty:');
-    s.difficulty.forEach((k, v) {
-      print('    $k : $v');
-    });
+      // Normal map fields (difficulty, etc.)
+      if (entry.value is Map) {
+        print('${entry.key}:');
+        (entry.value as Map).forEach(
+          (k, v) => print('  $k : $v'),
+        );
+      } else {
+        print('${entry.key} : ${entry.value}');
+      }
+    }
 
     print('');
   }

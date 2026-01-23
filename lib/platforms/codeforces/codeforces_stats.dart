@@ -12,6 +12,9 @@ class CodeforcesStatsService {
     final difficulty = <String, int>{};
     final activeDays = <String>{};
 
+    // Track difficulty per UNIQUE problem
+    final Map<String, int> problemDifficulty = {};
+
     for (final s in submissions) {
       final ts = s['creationTimeSeconds'] * 1000;
       final d = DateTime.fromMillisecondsSinceEpoch(ts);
@@ -20,16 +23,26 @@ class CodeforcesStatsService {
       if (s['verdict'] != 'OK') continue;
 
       final p = s['problem'];
-      solvedProblems.add('${p['contestId']}${p['index']}');
+      final problemId = '${p['contestId']}${p['index']}';
+
+      // Only count once per problem
+      if (solvedProblems.contains(problemId)) continue;
+
+      solvedProblems.add(problemId);
 
       if (p['rating'] != null) {
-        final key = p['rating'].toString();
-        difficulty.update(key, (v) => v + 1, ifAbsent: () => 1);
+        final ratingKey = p['rating'].toString();
+        difficulty.update(
+          ratingKey,
+          (v) => v + 1,
+          ifAbsent: () => 1,
+        );
       }
     }
 
     final rating =
         contests.isEmpty ? null : contests.last['newRating'];
+
     final maxRating = contests.isEmpty
         ? null
         : contests
@@ -37,15 +50,16 @@ class CodeforcesStatsService {
             .reduce((a, b) => a > b ? a : b);
 
     return PlatformStats(
-      platform: 'Codeforces',
-      username: handle,
-      solved: solvedProblems.length,
-      submissions: submissions.length,
-      activeDays: activeDays.length,
-      difficulty: difficulty,
-      contests: contests.length,
-      rating: rating,
-      maxRating: maxRating,
+      platform: 'codeforces',
+      data: {
+        'Problems Solved': solvedProblems.length,
+        'Submissions': submissions.length,
+        'Active Days': activeDays.length,
+        'Contests': contests.length,
+        'Rating': rating,
+        'Max Rating': maxRating,
+        'Difficulty': difficulty,
+      },
     );
   }
 }
