@@ -1,5 +1,6 @@
 import '../base/platform_adapter.dart';
 import '../../models/activity.dart';
+import 'leetcode_api.dart';
 
 class LeetCodeAdapter extends PlatformAdapter {
   @override
@@ -7,8 +8,18 @@ class LeetCodeAdapter extends PlatformAdapter {
 
   @override
   Future<List<Activity>> fetchActivity(String username) async {
-    // To be implemented using GraphQL later
-    return [];
+    final calendar =
+        await LeetCodeApi.fetchCalendar(username);
+
+    return calendar.entries
+        .map(
+          (e) => Activity(
+            DateTime(e.key.year, e.key.month, e.key.day),
+            'leetcode',
+            e.value,
+          ),
+        )
+        .toList();
   }
 }
 

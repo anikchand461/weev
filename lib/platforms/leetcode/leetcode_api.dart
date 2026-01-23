@@ -18,6 +18,7 @@ class LeetCodeApi {
     return jsonDecode(response.body);
   }
 
+  /// Total solved + difficulty breakdown
   static Future<Map<String, int>> fetchSolved(String username) async {
     const query = '''
       query getUserProfile(\$username: String!) {
@@ -37,10 +38,12 @@ class LeetCodeApi {
         data['data']['matchedUser']['submitStats']['acSubmissionNum'];
 
     return {
-      for (final d in list) d['difficulty']: d['count']
+      for (final d in list)
+        d['difficulty'] as String: d['count'] as int
     };
   }
 
+  /// Daily activity (for heatmap / stats)
   static Future<Map<DateTime, int>> fetchCalendar(
       String username) async {
     const query = '''
@@ -52,13 +55,23 @@ class LeetCodeApi {
     ''';
 
     final data = await _post(query, {'username': username});
-    final cal =
+
+    // 🔥 IMPORTANT: this is a STRING, not a map
+    final rawCalendar =
         data['data']['matchedUser']['submissionCalendar'];
 
-    return cal.map<DateTime, int>((k, v) {
+    // Decode string → Map
+    final decoded =
+        jsonDecode(rawCalendar) as Map<String, dynamic>;
+
+    return decoded.map<DateTime, int>((k, v) {
       final date = DateTime.fromMillisecondsSinceEpoch(
           int.parse(k) * 1000);
-      return MapEntry(date, v);
+
+      return MapEntry(
+        DateTime(date.year, date.month, date.day),
+        v as int,
+      );
     });
   }
 }

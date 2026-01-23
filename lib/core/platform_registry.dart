@@ -1,9 +1,10 @@
+import '../platforms/codeforces/codeforces_adapter.dart';
+import '../platforms/leetcode/leetcode_adapter.dart';
+
 class PlatformRegistry {
-  static final Map<String, String> platforms = {
-    'github': 'GitHub',
-    'codeforces': 'Codeforces',
-    'leetcode': 'LeetCode',
-    'atcoder': 'AtCoder',
+  static final adapters = {
+    'codeforces': CodeforcesAdapter(),
+    'leetcode': LeetCodeAdapter(),
   };
 }
 

@@ -1,67 +1,48 @@
 import '../../services/config_service.dart';
-import '../../platforms/codeforces/codeforces_api.dart';
+import '../../platforms/codeforces/codeforces_stats.dart';
+import '../../platforms/leetcode/leetcode_stats.dart';
 
 class StatsCommand {
   static Future<void> run() async {
     final config = await ConfigService.load();
 
-    if (!config.platforms.containsKey('codeforces')) {
-      print('Codeforces not configured. Run `weev init` first.');
-      return;
+    print('\n📊 Weev Full Stats\n');
+
+    if (config.platforms.containsKey('codeforces')) {
+      final handle = config.platforms['codeforces']!;
+      final s = await CodeforcesStatsService.fetch(handle);
+
+      _printStats(s);
     }
 
-    final handle = config.platforms['codeforces']!;
-    print('Fetching Codeforces stats for $handle...\n');
+    if (config.platforms.containsKey('leetcode')) {
+      final handle = config.platforms['leetcode']!;
+      final s = await LeetCodeStatsService.fetch(handle);
 
-    final submissions =
-        await CodeforcesApi.fetchSubmissions(handle);
-    final contests =
-        await CodeforcesApi.fetchContests(handle);
+      _printStats(s);
+    }
+  }
 
-    final solved = <String>{};
-    final difficulty = <int, int>{};
+  static void _printStats(s) {
+    print('🔹 ${s.platform.toUpperCase()} (${s.username})');
+    print('  Problems Solved : ${s.solved}');
+    print('  Submissions     : ${s.submissions}');
+    print('  Active Days     : ${s.activeDays}');
 
-    for (final s in submissions) {
-      if (s['verdict'] != 'OK') continue;
-
-      final p = s['problem'];
-      solved.add('${p['contestId']}${p['index']}');
-
-      if (p['rating'] != null) {
-        difficulty.update(
-          p['rating'],
-          (v) => v + 1,
-          ifAbsent: () => 1,
-        );
-      }
+    if (s.contests != null) {
+      print('  Contests        : ${s.contests}');
+    }
+    if (s.rating != null) {
+      print('  Rating          : ${s.rating}');
+      print('  Max Rating      : ${s.maxRating}');
     }
 
-    final currentRating =
-        contests.isEmpty ? 0 : contests.last['newRating'];
+    print('  Difficulty:');
+    s.difficulty.forEach((k, v) {
+      print('    $k : $v');
+    });
 
-    final maxRating = contests.isEmpty
-        ? 0
-        : contests
-            .map<int>((c) => c['newRating'])
-            .reduce((a, b) => a > b ? a : b);
-
-    print('📊 Codeforces Stats');
-    print('----------------------');
-    print('Handle          : $handle');
-    print('Problems Solved : ${solved.length}');
-    print('Submissions     : ${submissions.length}');
-    print('Contests        : ${contests.length}');
-    print('Current Rating  : $currentRating');
-    print('Max Rating      : $maxRating');
-
-    if (difficulty.isNotEmpty) {
-      print('\n📈 Difficulty Breakdown');
-      difficulty.keys.toList()
-        ..sort()
-        ..forEach((k) {
-          print('$k : ${difficulty[k]}');
-        });
-    }
+    print('');
   }
 }
 
