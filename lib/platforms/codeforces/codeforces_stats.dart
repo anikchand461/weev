@@ -24,28 +24,35 @@ class CodeforcesStatsService {
 
       if (p['rating'] != null) {
         final key = p['rating'].toString();
-        difficulty.update(key, (v) => v + 1, ifAbsent: () => 1);
+        difficulty.update(
+          key,
+          (v) => v + 1,
+          ifAbsent: () => 1,
+        );
       }
     }
 
     final rating =
         contests.isEmpty ? null : contests.last['newRating'];
+
     final maxRating = contests.isEmpty
         ? null
         : contests
             .map<int>((c) => c['newRating'])
             .reduce((a, b) => a > b ? a : b);
 
+    // ✅ NEW unified PlatformStats return
     return PlatformStats(
-      platform: 'Codeforces',
-      username: handle,
-      solved: solvedProblems.length,
-      submissions: submissions.length,
-      activeDays: activeDays.length,
-      difficulty: difficulty,
-      contests: contests.length,
-      rating: rating,
-      maxRating: maxRating,
+      platform: 'codeforces',
+      data: {
+        'Problems Solved': solvedProblems.length,
+        'Submissions': submissions.length,
+        'Active Days': activeDays.length,
+        'Contests': contests.length,
+        'Rating': rating,
+        'Max Rating': maxRating,
+        'Difficulty': difficulty,
+      },
     );
   }
 }
