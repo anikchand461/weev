@@ -13,6 +13,7 @@ class PlatformRegistry {
     'gitlab',
     'atcoder',
     'codechef', // ✅ ADD THIS
+    'cses',
   ];
 
   /// Platforms that have activity adapters

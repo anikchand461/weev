@@ -9,6 +9,7 @@ import '../../platforms/atcoder/atcoder_stats.dart';
 
 import '../../utils/github_heatmap_renderer.dart';
 import '../../platforms/codechef/codechef_stats.dart';
+import '../../platforms/cses/cses_stats.dart';
 
 class StatsCommand {
   static Future<void> run() async {
@@ -77,6 +78,21 @@ class StatsCommand {
 
       if (stats != null) {
         _print(stats, config.platforms['codechef']!);
+      }
+    }
+
+    // ─────────────────────────────
+    // CSES (STATS ONLY, SAFE)
+    // ─────────────────────────────
+    if (config.platforms.containsKey('cses')) {
+      try {
+        final stats = await CsesStatsService.fetch(
+          config.platforms['cses']!,
+        );
+        _print(stats, config.platforms['cses']!);
+      } catch (e) {
+        print('🔷 CSES (${config.platforms['cses']!})');
+        print('Error: Unable to fetch CSES stats\n');
       }
     }
   }
