@@ -3,6 +3,7 @@ import '../../models/platform_stats.dart';
 import '../../platforms/codeforces/codeforces_stats.dart';
 import '../../platforms/leetcode/leetcode_stats.dart';
 import '../../platforms/github/github_stats.dart';
+import '../../platforms/gitlab/gitlab_stats.dart';
 import '../../utils/github_heatmap_renderer.dart';
 
 class StatsCommand {
@@ -33,6 +34,14 @@ class StatsCommand {
         config.tokens['github']!,
       );
       _print(stats, config.platforms['github']!);
+    }
+
+    if (config.platforms.containsKey('gitlab')) {
+      final stats = await GitLabStatsService.fetch(
+        config.platforms['gitlab']!,
+        token: config.tokens['gitlab'],
+      );
+      _print(stats, config.platforms['gitlab']!);
     }
 
   }

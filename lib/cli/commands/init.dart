@@ -27,6 +27,16 @@ class InitCommand {
           config.tokens['github'] = token;
         }
       }
+
+      if (platform == 'gitlab') {
+        final token = Prompt.ask(
+          'Enter GitLab token (leave empty to skip)',
+        );
+
+        if (token.isNotEmpty) {
+          config.tokens['gitlab'] = token;
+        }
+      }
     }
 
     await ConfigService.save(config);
