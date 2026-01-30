@@ -10,13 +10,13 @@ import '../../platforms/atcoder/atcoder_stats.dart';
 import '../../utils/github_heatmap_renderer.dart';
 import '../../platforms/codechef/codechef_stats.dart';
 import '../../platforms/cses/cses_stats.dart';
+import '../../platforms/gfg/gfg_stats.dart';
 
 class StatsCommand {
   static Future<void> run(List<String> args) async {
     final config = await ConfigService.load();
 
-    final requestedPlatform =
-        args.isNotEmpty ? args.first.toLowerCase() : null;
+    final requestedPlatform = args.isNotEmpty ? args.first.toLowerCase() : null;
 
     if (requestedPlatform != null &&
         !config.platforms.containsKey(requestedPlatform)) {
@@ -110,6 +110,21 @@ class StatsCommand {
       } catch (e) {
         print('🔷 CSES (${config.platforms['cses']!})');
         print('Error: Unable to fetch CSES stats\n');
+      }
+    }
+        // ─────────────────────────────
+       // GFG (READ-ONLY)
+       // ─────────────────────────────
+    if (config.platforms.containsKey('gfg')) {
+      final stats = await GfgStatsService.fetch(
+        config.platforms['gfg']!,
+      );
+
+      if (stats != null) {
+        _print(stats, config.platforms['gfg']!);
+      } else {
+        print('🔷 GFG (${config.platforms['gfg']!})');
+        print('Run `weev sync` to fetch GFG data\n');
       }
     }
   }

@@ -14,6 +14,7 @@ class PlatformRegistry {
     'atcoder',
     'codechef', // ✅ ADD THIS
     'cses',
+    'gfg',
   ];
 
   /// Platforms that have activity adapters

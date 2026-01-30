@@ -1,10 +1,13 @@
 import 'dart:io';
 
 class WeevPaths {
-  static String get configFile {
+  static String get baseDir {
     final home = Platform.environment['HOME'] ??
         Platform.environment['USERPROFILE']!;
-    return '$home/.weev/config.json';
+    return '$home/.weev';
+  }
+
+  static String get configFile {
+    return '$baseDir/config.json';
   }
 }
-
