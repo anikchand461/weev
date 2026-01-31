@@ -160,61 +160,95 @@ class StatsCommand {
       final value = entry.value;
       final username = config.platforms[platform] ?? 'unknown';
       final icon = _getPlatformIcon(platform);
+      final color = _getPlatformColor(platform);
 
       if (value is PlatformStats) {
-        _printDashboardCard(icon, platform.toUpperCase(), username, value);
+        _printDashboardCard(icon, platform.toUpperCase(), username, value, color);
       } else {
         final msg = value is String ? value : value.toString();
-        _printErrorCard(icon, platform.toUpperCase(), username, msg);
+        _printErrorCard(icon, platform.toUpperCase(), username, msg, color);
       }
-
       print(''); // space between each card
     }
   }
 
   // ────────────────────────────────────────────────
-  // Vertical boxed card for success
+  // Vertical colorful boxed card for success (improved map display)
   // ────────────────────────────────────────────────
-  static void _printDashboardCard(String icon, String platform, String username, PlatformStats stats) {
-    final w = _terminalWidth.clamp(50, 140);
-    final cardInnerWidth = w - 4; // full width minus borders
+  static void _printDashboardCard(String icon, String platform, String username, PlatformStats stats, Chalk color) {
+    final w = _terminalWidth.clamp(60, 140);
+    final cardWidth = w - 4;
 
-    print(chalk.cyan('┌${'─' * cardInnerWidth}┐'));
+    print(color('┌${'─' * cardWidth}┐'));
 
     final title = '$icon $platform ($username)';
-    print(chalk.cyan('│ ${title.padRight(cardInnerWidth - 2)} │'));
+    print(color('│ ${title.padRight(cardWidth - 2)} │'));
 
-    print(chalk.cyan('├${'─' * cardInnerWidth}┤'));
+    print(color('├${'─' * cardWidth}┤'));
 
     for (final entry in stats.data.entries) {
-      if (entry.key == 'Heatmap') continue;
+      // Skip Heatmap for non-GitHub platforms
+      if (entry.key == 'Heatmap' && platform.toLowerCase() != 'github') continue;
 
-      String line;
       if (entry.value is Map) {
-        line = entry.key.padRight(cardInnerWidth - 4);
-      } else {
-        line = '${entry.key.padRight(20)} : ${entry.value}'.padRight(cardInnerWidth - 4);
-      }
+        // Special handling for maps: show as indented bullet list
+        print(color('│ ${entry.key.padRight(cardWidth - 2)} │'));
+        final map = entry.value as Map;
+        for (final subEntry in map.entries) {
+          String subKey = subEntry.key.toString();
+          String subValue = subEntry.value.toString();
 
-      print(chalk.cyan('│ $line │'));
+          // Make keys prettier
+          subKey = subKey[0].toUpperCase() + subKey.substring(1);
+
+          // Truncate long values
+          if (subValue.length > cardWidth - 20) {
+            subValue = subValue.substring(0, cardWidth - 23) + '...';
+          }
+
+          final subLine = '  • $subKey: $subValue'.padRight(cardWidth - 4);
+          print(color('│ ') + chalk.white(subLine) + color(' │'));
+        }
+      } else {
+        // Normal key-value pair
+        String displayKey = entry.key;
+        String valueStr = entry.value.toString();
+
+        // Make GitHub/GitLab keys more readable
+        if (platform.toLowerCase() == 'github' || platform.toLowerCase() == 'gitlab') {
+          if (displayKey == 'Total Contributions') displayKey = 'Contributions';
+          if (displayKey == 'Pull Requests') displayKey = 'PRs';
+          if (displayKey == 'Issues Opened') displayKey = 'Issues';
+          if (displayKey == 'Events (Recent)') displayKey = 'Recent Events';
+        }
+
+        // Truncate long values
+        if (valueStr.length > cardWidth - 30) {
+          valueStr = valueStr.substring(0, cardWidth - 33) + '...';
+        }
+
+        final line = '${displayKey.padRight(22)} : $valueStr'.padRight(cardWidth - 4);
+        print(color('│ ') + chalk.white(line) + color(' │'));
+      }
     }
 
-    print(chalk.cyan('└${'─' * cardInnerWidth}┘'));
+    print(color('└${'─' * cardWidth}┘'));
     print('');
   }
 
   // ────────────────────────────────────────────────
   // Vertical boxed card for error
   // ────────────────────────────────────────────────
-  static void _printErrorCard(String icon, String platform, String username, String message) {
-    final w = _terminalWidth.clamp(50, 140);
-    final cardInnerWidth = w - 4;
+  static void _printErrorCard(String icon, String platform, String username, String? message, Chalk color) {
+    final w = _terminalWidth.clamp(60, 140);
+    final cardWidth = w - 4;
+    final safeMsg = message ?? 'Unknown error';
 
-    print(chalk.red('┌${'─' * cardInnerWidth}┐'));
-    print(chalk.red('│ ❌ $icon $platform ($username)'.padRight(cardInnerWidth - 1) + ' │'));
-    print(chalk.red('├${'─' * cardInnerWidth}┤'));
-    print(chalk.red('│ $message'.padRight(cardInnerWidth - 1) + ' │'));
-    print(chalk.red('└${'─' * cardInnerWidth}┘'));
+    print(chalk.red('┌${'─' * cardWidth}┐'));
+    print(chalk.red('│ ❌ $icon $platform ($username)'.padRight(cardWidth - 1) + ' │'));
+    print(chalk.red('├${'─' * cardWidth}┤'));
+    print(chalk.red('│ $safeMsg'.padRight(cardWidth - 1) + ' │'));
+    print(chalk.red('└${'─' * cardWidth}┘'));
     print('');
   }
 
@@ -229,6 +263,20 @@ class StatsCommand {
       case 'cses':       return '🔵';
       case 'gfg':        return '📗';
       default:           return '🔷';
+    }
+  }
+
+  static Chalk _getPlatformColor(String platform) {
+    switch (platform.toLowerCase()) {
+      case 'codeforces': return chalk.blue.bold;
+      case 'leetcode':   return chalk.yellow.bold;
+      case 'github':     return chalk.white.bold;
+      case 'gitlab':     return chalk.magenta.bold;
+      case 'atcoder':    return chalk.orange.bold;
+      case 'codechef':   return chalk.green.bold;
+      case 'cses':       return chalk.cyan.bold;
+      case 'gfg':        return chalk.greenBright.bold;
+      default:           return chalk.cyan.bold;
     }
   }
 
