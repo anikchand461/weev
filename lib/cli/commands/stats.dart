@@ -27,15 +27,20 @@ class StatsCommand {
     print('📊 Weev Full Stats\n');
 
     // ─────────────────────────────
-    // Codeforces
+    // Codeforces (SAFE)
     // ─────────────────────────────
-    if (_shouldShow('codeforces', requestedPlatform) &&
-        config.platforms.containsKey('codeforces')) {
-      final stats = await CodeforcesStatsService.fetch(
-        config.platforms['codeforces']!,
-      );
-      _print(stats, config.platforms['codeforces']!);
+    if (config.platforms.containsKey('codeforces')) {
+      final username = config.platforms['codeforces']!;
+      try {
+        final stats =
+            await CodeforcesStatsService.fetch(username);
+        _print(stats, username);
+      } catch (e) {
+        print('🔷 CODEFORCES ($username)');
+        print('Error: The username is not available\n');
+      }
     }
+
 
     // ─────────────────────────────
     // LeetCode
@@ -54,11 +59,44 @@ class StatsCommand {
     if (_shouldShow('github', requestedPlatform) &&
         config.platforms.containsKey('github') &&
         config.tokens.containsKey('github')) {
-      final stats = await GitHubStatsService.fetch(
-        config.platforms['github']!,
-        config.tokens['github']!,
-      );
-      _print(stats, config.platforms['github']!);
+      
+      final username = config.platforms['github']!;
+      final token = config.tokens['github']!;
+
+      try {
+        final stats = await GitHubStatsService.fetch(username, token);
+        _print(stats, username);
+      } catch (e) {
+        // ─── Handle different kinds of failures ────────────────────────
+        
+        if (e.toString().contains('NOT_FOUND') || 
+            e.toString().contains('Could not resolve to a User')) {
+          print('❌ GitHub username not found: "$username"');
+          print('   → Please check the spelling or if the account exists.');
+          print('');
+          // continue to next platform (don't rethrow)
+        }
+        
+        else if (e.toString().contains('401') || 
+                e.toString().contains('Bad credentials') ||
+                e.toString().contains('INVALID_TOKEN') ||
+                e.toString().contains('TOKEN') && e.toString().contains('invalid')) {
+          print('❌ Invalid or expired GitHub token');
+          print('   → Please generate a new Personal Access Token at:');
+          print('     https://github.com/settings/tokens');
+          print('   → Make sure it has "read:user" scope (and others you need)');
+          print('');
+          // continue or exit(1) depending on your CLI philosophy
+        }
+        
+        else {
+          // Unknown / unexpected error — let developer see the stack trace
+          print('❌ Failed to fetch GitHub stats for "$username"');
+          print('   Error: $e');
+          // Optionally: rethrow; if you want to halt on unknown errors
+          print('');
+        }
+      }
     }
 
     // ─────────────────────────────
@@ -66,11 +104,57 @@ class StatsCommand {
     // ─────────────────────────────
     if (_shouldShow('gitlab', requestedPlatform) &&
         config.platforms.containsKey('gitlab')) {
-      final stats = await GitLabStatsService.fetch(
-        config.platforms['gitlab']!,
-        token: config.tokens['gitlab'],
-      );
-      _print(stats, config.platforms['gitlab']!);
+      
+      final username = config.platforms['gitlab']!;
+      final token = config.tokens['gitlab'];  // may be null → handle below
+
+      if (token == null || token.isEmpty) {
+        print('❌ GitLab token missing or empty');
+        print('   → Add a valid token in your config for platform "gitlab"');
+        print('');
+        // continue or return;
+      } else {
+        try {
+          final stats = await GitLabStatsService.fetch(
+            username,
+            token: token,
+          );
+          _print(stats, username);
+        } catch (e, stack) {
+          // ─── Differentiate common failure modes ────────────────────────
+          
+          final errorStr = e.toString().toLowerCase();
+
+          if (errorStr.contains('not found') || 
+              errorStr.contains('404') ||
+              errorStr.contains('user not found')) {
+            print('❌ GitLab username not found: "$username"');
+            print('   → Double-check spelling/case (GitLab usernames are case-sensitive)');
+            print('   → Or confirm the user exists at https://gitlab.com/$username (or your self-hosted instance)');
+            print('');
+          }
+          
+          else if (errorStr.contains('401') || 
+                  errorStr.contains('unauthorized') ||
+                  errorStr.contains('bad credentials') ||
+                  errorStr.contains('forbidden') && errorStr.contains('403')) {
+            print('❌ GitLab token invalid, expired, or lacks permissions');
+            print('   → Generate a new Personal Access Token at:');
+            print('     https://gitlab.com/-/profile/personal_access_tokens');
+            print('   → Required scopes: at minimum "read_user", "api" (for broader stats)');
+            print('   → For self-hosted GitLab, use the equivalent URL');
+            print('');
+          }
+          
+          else {
+            // Fallback for unexpected errors – show details
+            print('❌ Failed to fetch GitLab stats for "$username"');
+            print('   Error: $e');
+            print('');
+            // Optionally: print(stack); if you want full trace for debugging
+          }
+        }
+      }
     }
 
     // ─────────────────────────────
